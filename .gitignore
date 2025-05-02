@@ -177,3 +177,13 @@ cython_debug/
 *games/*
 *GAMES/*
 *Games/*
+# Download from project page instead:
+*emulator/*
+*emulators/*
+*emu/*
+*Emulator/*
+*Emulators/*
+*Emu/*
+*EMULATOR/*
+*EMULATORS/*
+*EMU/*
