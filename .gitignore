@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Do Not Share:
+*/games*
+*/GAMES*
+*/Games*
