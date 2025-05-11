@@ -1,3 +1,5 @@
+"""Displays the home page of the application"""
+
 print("Retros.home")
 
 from tkinter import *
