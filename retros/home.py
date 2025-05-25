@@ -2,7 +2,38 @@
 
 print("Retros.home")
 
+from typing import Literal
 from tkinter import *
+from tkinter.font import Font
+
+# Used to as a default value for current game selection
+# Not intended for appearance on UI
+blacklisted_str:str="«¦·§·¦»"
+blacklisted_game:dict={
+    "Emulator": "",
+    "Enabled": False,
+    "Alias": blacklisted_str,
+    "Description": "",
+    "Icon_Location": "",
+    "Banner_Location": "",
+    "Game_Location": "",
+    "Save_location": "",
+    "Game_Type": "",
+    "Save_Type": "",
+    "Args": [],
+    "Manual_Start_Cmd": "",
+    "Release_Dates": {"USA":"January 1st, 2000",},
+    "Popularity": "10/10",
+    "Genres": [],
+    "Languages": ["English",],
+    "Developer": [],
+    "Publishers": [],
+    "Players": "1",
+    "Connectivity": "",
+    "Series": "",
+    "Rating": {"ESRB":"E",},
+    "Ext_Link": "",
+    }
 
 def perc2float(percentage:int|float,max_value:float|int=100)-> float:
     """Returns a given percentage of a number as a decimal value"""
@@ -13,6 +44,73 @@ def perc2float(percentage:int|float,max_value:float|int=100)-> float:
         raise TypeError(f"Please ensure max_value is of type int OR float, not {type(max_value)}")
 
     return (percentage/100)*max_value
+def minMax_values(
+    current:int|float,
+    minimum:int|float=0,
+    maximum:int|float=1
+    )-> int|float:
+    """
+    ### Returns a validated value within the provided range
+
+    This function is for data validation only,
+    it does not serve as an alternative to the builtin "range(start, stop[, step])" function
+
+    ---
+
+    Will return TypeError if any of the inputs are not the correct type
+
+    Will return ValueError if minimum value is greater than the maximum value
+
+    Will default to False if overflow input could not be understood
+    """
+    #region sterilize inputs and place guard clauses
+    if any({# inputs are incorrect type}):
+        not isinstance(current,(int,float)),
+        not isinstance(minimum,(int,float)),
+        not isinstance(maximum,(int,float)),
+        }):
+        return TypeError("Please ensure all inputs are of the correct type before parsing")
+    if maximum < minimum:
+        return ValueError("Please make sure your minimum value is SMALLER than your maximum value")
+
+    if isinstance(minimum, int):# convert to float
+        minimum= float(minimum)
+    if isinstance(maximum, int):# convert to float
+        maximum= float(maximum)
+    if isinstance(current, int):# convert to float
+        current= float(current)
+    #endregion sterilize inputs and place guard clauses
+    clean_to_float= lambda value: int(value) if str(value).endswith(".0") else value
+    #region quick return if valid entry
+    if minimum<current<maximum:
+        return clean_to_float(current)
+    elif current<=minimum:
+        return clean_to_float(minimum)
+    elif maximum<=current:
+        return clean_to_float(maximum)
+    #endregion quick return if valid entry
+def clean_simple_dict_to_str(table:dict,sep:str="\n",start="",end="")-> str:
+    """Takes a shallow dictionary and converts it to a string"""
+    _temp:str=start
+    for key,value in table.items():
+        if key=="":
+            key='""'
+        if value=="":
+            value='""'
+        _temp+= f"{key}: {value}{sep}"
+    return f"{_temp.removesuffix(sep)}{end}"
+def clean_list_to_str(values:list|str,sep:str=", ",start="",end="")-> str:
+    """Takes a shallow dictionary and converts it to a string"""
+    if isinstance(values,str):
+        return values
+    _temp:str=start
+    values:set= set(values)
+    for index in values:
+        if index=="" and not '""' in values:
+            index='""'
+        _temp+= f"{index}{sep}"
+    return f"{_temp.removesuffix(sep)}{end}"
+
 def theme(mode:str="light",attr:str="fg")-> str:
     """Returns the value based on the provided mode (theme) and attribute
 
@@ -60,7 +158,12 @@ def theme(mode:str="light",attr:str="fg")-> str:
 class RetrosHome:
 
     def __init__(self):
+        """Localized Game Hub"""
+
+        #region "Global" variables
+        self.app_name:str= "RetrOS"
         self.theme="dark"   # light/dark mode
+        self.opp_theme= lambda: "light" if self.theme=="dark" else "dark"
         border_width:int|float= 0.003# local value to provide as default
         self.bulk_widgets:dict= {# widget configurations reference chart}
             # All scales are percentages from 0-1
@@ -135,11 +238,17 @@ class RetrosHome:
                     },
                 },
         }
-        self.games_dir:str="./Games"
+        self.owned_games:dict= {}
+        self.__selected_game:dict=blacklisted_game
+        self.tk = Tk(className=self.app_name)
+        self.selected_font = Font(family="Arial", size=12)
+        self.tk.minsize(width=770,height=460)
+        #endregion "Global" variables
 
+        #region Prep window
+        window_geometry:str= f"WINDOW:\t{self.tk.winfo_screenwidth()}x{self.tk.winfo_screenheight()}"
         # Initialize window and configure display settings
-        self.tk = Tk()
-        self.tk.title("RetrOS")
+        self.tk.title(self.app_name)
         self.tk.config(bg=theme(self.theme,"bg"))
         self.tk.attributes('-zoomed', True)  # This just maximizes it so we can see the window. It's nothing to do with fullscreen.
 
@@ -147,9 +256,10 @@ class RetrosHome:
         self.state = False # Assumes window defaulted to maximized mode
         self.tk.bind("<F11>", self.toggle_fullscreen)
         self.tk.bind("<Escape>", self.end_fullscreen)
+        #endregion Prep window
 
+        #region Add objects to window
         # Add Elements to the window
-        #region Initiate Frame
         self.frame = Frame( # Placement manager
             self.tk, # Parent frame belongs to
             name="frame",
@@ -167,40 +277,322 @@ class RetrosHome:
             height=0, # Offset from top to bottom
             fg=theme(self.theme,"fg"),
             bg=theme(self.theme,"bg"))
+
         self.gamelist_frame= Frame(# Stores list of owned games)
             self.frame,
             name="gamelist_frame",
-            bg=self.bulk_widgets["gamelist_frame"]["bg"],
+            bg=theme(self.theme,"bg"),
             )
+        self.games_listbox= Listbox(
+            self.gamelist_frame,
+            name="games_listbox",
+            selectmode="single",
+            activestyle="none",
+            fg=theme(self.theme,"fg"),
+            bg=theme(self.theme,"bg"),
+            relief="solid",
+            bd=0, # disables the relief border
+            highlightthickness=0, # disables the listbox border
+            font=self.selected_font,
+            )
+
         self.gamebanner_frame= Frame(# Stores imagery for selected game)
             self.frame,
             name="gamebanner_frame",
-            bg=self.bulk_widgets["gamebanner_frame"]["bg"],
+            bg=theme(self.theme,"Accent"),
             )
+
         self.gameinfo_frame= Frame(# Stores information for selected game)
             self.frame,
             name="gameinfo_frame",
-            bg=self.bulk_widgets["gameinfo_frame"]["bg"],
+            bg=theme(self.theme,"Primary"),
             )
+        self.gameinfo_noticeLabel= Label(
+            self.gameinfo_frame,
+            name="gameinfo_noticeLabel",
+            text= "No Games Detected",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "center",
+            font=self.selected_font,
+        )
+        self.gameinfo_Description= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Description",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Series= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Series",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Genres= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Genres",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Languages= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Languages",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Players= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Players",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Popularity= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Popularity",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Rating= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Rating",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Connectivity= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Connectivity",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Release_Dates= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Release_Dates",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Developer= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Developer",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Publishers= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Publishers",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+        self.gameinfo_Ext_Link= Label(
+            self.gameinfo_frame,
+            name="gameinfo_Ext_Link",
+            text= "",
+            bg= theme(self.theme,"Primary"),
+            fg= theme(self.opp_theme(),"fg"),
+            justify= "left",
+            font=self.selected_font,
+        )
+
         self.gamemngr_frame= Frame(# Stores game options for selected game)
             self.frame,
             name="gamemngr_frame",
             bg=self.bulk_widgets["gamemngr_frame"]["bg"],
             )
+        self.start_game_btn = Button(
+            self.gamemngr_frame,
+            name="start_game_btn",
+            text="Select A Game First",
+            font=self.selected_font,
+            command=self.start_game_onClick,
+            state="disabled"
+            )
+        self.gamemngr_selgame_gamepath= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_path",
+            text= f"Game Location: ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_savepath= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_savepath",
+            text= f"Save Location: ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_gametype= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_gametype",
+            text= f"Game Type: ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_savetype= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_savetype",
+            text= f"Save Type: ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_args= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_args",
+            text= f"Args: ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_cmd= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_cmd",
+            text= f"Manual Command: ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_divider= Label(
+            self.gamemngr_frame,
+            name="gamemngr_divider",
+            text= "",
+            bg= "black",
+            fg= "Black",
+            )
+        self.gamemngr_selgame_cursave= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_cursave",
+            text= f"Current Save: ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_bckpsave1= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_bckpsave1",
+            text= f"Backup Save (1): ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_bckpsave2= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_bckpsave2",
+            text= f"Backup Save (2): ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_bckpsave3= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_bckpsave3",
+            text= f"Backup Save (3): ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_bckpsave4= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_bckpsave4",
+            text= f"Backup Save (4): ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_bckpsave5= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_bckpsave5",
+            text= f"Backup Save (5): ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_bckpsave6= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_bckpsave6",
+            text= f"Backup Save (6): ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.gamemngr_selgame_bckpsave7= Label(
+            self.gamemngr_frame,
+            name="gamemngr_selgame_bckpsave7",
+            text= f"Backup Save (7): ",
+            bg= "red",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+
         self.appmngr_frame= Frame(# Stores options relating to the game library and the app
             self.frame,
             name="appmngr_frame",
             bg=self.bulk_widgets["appmngr_frame"]["bg"],
             )
-
-        self.games_listbox= Listbox(
-            self.gamelist_frame,
-            selectmode="single",
-            bg= "blue",
-            fg= "black",
-            relief="solid",
-            bd=0, # disables the relief border
-            highlightthickness=0, # disables the listbox border
+        self.appmngr_settings= Label(
+            self.appmngr_frame,
+            name="appmngr_settings",
+            text= f"Settings: ",
+            bg="grey",
+            fg= "Black",
+            justify= "left",
+            font=self.selected_font,
+            )
+        self.appmngr_theme_btn = Button(
+            self.appmngr_frame,
+            name="appmngr_theme_btn",
+            text=self.theme.capitalize(),
+            font=self.selected_font,
+            command=self.toggle_theme,
+            state="normal"
             )
 
         self.bg.place(# Cover entire window)
@@ -215,16 +607,164 @@ class RetrosHome:
         self.place_frame(self.gamemngr_frame, self.bulk_widgets)
         self.place_frame(self.appmngr_frame, self.bulk_widgets)
 
+        # Owned Games (Left)
         self.games_listbox.place(
-            relwidth=0.95,
+            relwidth=0.975,
             relheight=1,
             relx=0.025,
             rely=0,
             )
-        for i in range(100):
-            self.games_listbox.insert(0, i)
+        self.populate_gameList()
+        # Selected Game Banner (Top)
+        # Selected Game Information (Middle)
+        self.gameinfo_noticeLabel.place(
+            relwidth=1,
+            relheight=1,
+            relx=0,
+            rely=0,
+            )
+        # Selected Game Management (Right)
+        self.start_game_btn.place(
+            relwidth= 0.95,
+            relheight= 0.1,
+            relx= 0.025,
+            rely= 0.025,
+            )
+        # Selected App Management (Bottom)
+        self.appmngr_settings.place(
+            relwidth= 0.1,
+            relheight= 0.5,
+            relx= 0.01875,
+            rely= 0.25,
+            )
+        self.appmngr_theme_btn.place(
+            relwidth= 0.1,
+            relheight= 0.5,
+            relx= 0.88125,
+            rely= 0.25,
+            )
+        #endregion Add objects to window
 
+        print(self.get_all_widgets(self.frame, self.frame))
         self.toggle_fullscreen() # Open into fullscreen mode
+
+    def get_all_widgets(self, parent, master):
+        """
+        Returns a list of all child widgets within the given parent widget.
+        """
+
+        def genMasterDict(master=master)-> dict:
+            print(f"{master}".split(".")[1:])
+            master_dict:dict= {}
+            last_layers:str=""
+
+            for layer in f"{master}".split(".")[1:]:
+                last_layers+=f".{layer}"
+                last_layers= last_layers.removeprefix(".") \
+                    if last_layers.removeprefix(".")==layer \
+                    else last_layers
+                print(layer, last_layers)
+
+                if last_layers==layer:
+                    master_dict={
+                        layer: {
+                            "parent_alias":layer,
+                            "obj":None if any((
+                                len(f"{master}".split(".")[1:])>1,
+                                len(f"{master}".split(".")[1:])==0
+                                )) else master,
+                            "alias":layer,
+                            "tree":f"{last_layers}.{layer}",
+                            "children":{},
+                            }
+                        }
+                    continue
+                split_lastlayers:list= last_layers.split(".")
+                
+                print(master_dict)
+            input()
+
+
+        def check4children(parent= parent)-> dict|None:
+            """Checks a provided parent for child widgets"""
+
+            master_dict:dict= genMasterDict(".frame.help.me")
+            input()
+            all_widgets:list= parent.winfo_children()
+            child_widgets:dict={
+                    "parent_alias":f"{parent}".rsplit(".",2)[1],
+                    "obj":parent,
+                    "alias":f"{parent}".rsplit(".",1)[1],
+                    "tree":f"{parent}".rsplit(".",1)[0].removeprefix("."),
+                    "children":{},
+                    }
+            if all_widgets!=[]:# iterate if not empty
+                for accounted_for_widget in enumerate(all_widgets):
+                    index:int= accounted_for_widget[0]
+
+                    #region Str Ref
+                    widgetstr:str= f"{accounted_for_widget}"\
+                        .removeprefix("(")\
+                        .removesuffix(")")\
+                        .split(", ")[1]
+                    _widget_typeStr,_widget_heritage= widgetstr\
+                        .removeprefix("<tkinter.")\
+                        .removesuffix(">")\
+                        .split(" object .",1)
+                    _widget_alias:str= _widget_heritage.rsplit(".",1)[1]
+                    parent_alias, child_alias= _widget_heritage.split(".",1)
+                    #endregion Str Ref
+                    #region Make obj tree
+                    #region Sort str to obj
+                    widget_type= None
+                    match _widget_typeStr.lower().strip():
+                        case "frame":
+                            widget_type= Frame
+                        case "label":
+                            widget_type= Label
+                        case "entry":
+                            widget_type= Entry
+                        case "text":
+                            widget_type= Text
+                        case "canvas":
+                            widget_type= Canvas
+                        case "button":
+                            widget_type= Button
+                        case "radiobutton":
+                            widget_type= Radiobutton
+                        case "checkbutton":
+                            widget_type= Checkbutton
+                        case "Scale":
+                            widget_type= Scale
+                        case "listbox":
+                            widget_type= Listbox
+                        case "scrollbar":
+                            widget_type= Scrollbar
+                        case "optionmenu":
+                            widget_type= OptionMenu
+                        case "spinbox":
+                            widget_type= Spinbox
+                        case "labelframe":
+                            widget_type= LabelFrame
+                        case "panedwindow":
+                            widget_type= PanedWindow
+                        case None:
+                            print("Nonetype returned!")
+                    #endregion Sort str to obj
+                    child_widgets[child_alias]={
+                        "parent_alias":parent_alias,
+                        "obj":all_widgets[index],
+                        "alias":child_alias,
+                        "tree":f"{_widget_heritage}".rsplit(".",1)[0],
+                        "children":{},
+                        }
+                    #endregion Make obj tree
+            return child_widgets
+
+        results:dict= check4children()
+        input()
+
+        return
 
     def toggle_fullscreen(self, event=None):
         self.state = not self.state  # Just toggling the boolean
@@ -238,6 +778,26 @@ class RetrosHome:
         self.tk.update()
         self.tk.update_idletasks()
         return "break"
+
+    def toggle_theme(self)-> None:
+        """
+        Toggles the currently selected theme to the opposite
+
+        Default is Dark mode
+        """
+        print(self.theme)
+        match self.theme.lower().strip():
+            case "light":
+                self.theme="dark"
+            case "dark":
+                self.theme="light"
+            case _:
+                self.theme="dark"
+        self.appmngr_theme_btn.configure(
+            text=self.theme.capitalize(),
+            bg="black" if self.theme=="light" else "white",
+            fg="white" if self.theme=="light" else "black",
+            )
 
     def place_frame(self, widget, reference_chart:dict)-> list[tuple[int]]:
         """Ensures borders are properly calculated for a given frame when placed"""
@@ -256,6 +816,274 @@ class RetrosHome:
             relx= widget_offsetx+widget_border["left"],
             rely= widget_offsety+widget_border["top"],
         )
+    def populate_gameList(self)-> list:
+        """Populates the list with games installed on the computer"""
+        # Read through Games.conf
+            # Check if added game has all required variables
+            # Check if added game has "Enabled" to "True"
+            # If Game is correctly setup,
+                # Add to game library
+            #
+            # If Any portion of the check fails, return empty dict
+        for i in range(100):
+            self.games_listbox.insert(i,f"{i}")
+            self.owned_games[f"{i}"]= {
+                "Emulator": "PC",
+                "Enabled": True,
+                "Alias": f"{i}",
+                "Description": f"This is the number {i}",
+                "Icon_Location": "./Games",
+                "Banner_Location": "./Games",
+                "Game_Location": "./Games",
+                "Save_location": "./Games",
+                "Game_Type": ".nds",
+                "Save_Type": ".sav",
+                "Args": [],
+                "Manual_Start_Cmd": "",
+                "Release_Dates": {"USA":"January 1st, 2000",},
+                "Popularity": "10/10",
+                "Genres": ["Tools","Game Hub", "Alternative"],
+                "Languages": ["English",],
+                "Developer": "St0rmWalker",
+                "Publishers": "N/A",
+                "Players": "1",
+                "Connectivity": "N/A",
+                "Series": "St0rmLabs",
+                "Rating": {"ESRB":"E",},
+                "Ext_Link": "https://github.com/StormWalkerOnGitHub/RetrOS",
+            }
+        if self.owned_games!={}:
+            self.gameinfo_noticeLabel.configure(
+                text="Please Select A Game"
+                )
+        self.games_listbox.bind("<<ListboxSelect>>",self.selected_game)
+    def selected_game(self, event)-> Literal[False]|dict:
+        selected_value:str= self.games_listbox.get(self.games_listbox.curselection())
+
+        if self.__selected_game["Alias"]!=selected_value \
+            and selected_value!=blacklisted_game["Alias"]:
+            game_selected:dict= self.owned_games[selected_value]
+
+            # # Game Manager Content
+            self.selected_gameFile:str= f"{selected_value}{self.owned_games[selected_value]["Game_Type"]}"
+            self.selected_gameEmulator= self.owned_games[selected_value]["Emulator"]
+            self.selected_gameGame_Location= self.owned_games[selected_value]["Game_Location"]
+            self.selected_gameSave_location= self.owned_games[selected_value]["Save_location"]
+            self.selected_gameGame_Type= self.owned_games[selected_value]["Game_Type"]
+            self.selected_gameSave_Type= self.owned_games[selected_value]["Save_Type"]
+            self.selected_gameArgs= self.owned_games[selected_value]["Args"]
+            self.selected_gameManual_Start_Cmd= self.owned_games[selected_value]["Manual_Start_Cmd"]
+
+            # # Banner Content
+            self.selected_gameAlias= self.owned_games[selected_value]["Alias"]
+            self.selected_gameIcon_Location= self.owned_games[selected_value]["Icon_Location"]
+            self.selected_gameBanner_Location= self.owned_games[selected_value]["Banner_Location"]
+
+            # # Game Info Content
+            self.selected_gameDescription= self.owned_games[selected_value]["Description"]
+            self.selected_gameSeries= self.owned_games[selected_value]["Series"]
+            self.selected_gameGenres= self.owned_games[selected_value]["Genres"]
+            self.selected_gameLanguages= self.owned_games[selected_value]["Languages"]
+            self.selected_gamePlayers= self.owned_games[selected_value]["Players"]
+            self.selected_gamePopularity= self.owned_games[selected_value]["Popularity"]
+            self.selected_gameRating= self.owned_games[selected_value]["Rating"]
+            self.selected_gameConnectivity= self.owned_games[selected_value]["Connectivity"]
+            self.selected_gameRelease_Dates= self.owned_games[selected_value]["Release_Dates"]
+            self.selected_gameDeveloper= self.owned_games[selected_value]["Developer"]
+            self.selected_gamePublishers= self.owned_games[selected_value]["Publishers"]
+            self.selected_gameExt_Link= self.owned_games[selected_value]["Ext_Link"]
+
+            self.start_game_btn.configure(
+                text= "Start",
+                state= "active"
+                )
+
+            self.gameinfo_noticeLabel.place_forget()
+
+            self.gameinfo_Description.configure(
+                text=f"Description:\n{self.selected_gameDescription}",
+                )
+            self.gameinfo_Description.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            # Update information based on window
+            self.gameinfo_Description.bind("<Configure>", self.update_descr_wraplength)
+
+            self.gameinfo_Series.configure(text=f"Series: {self.selected_gameSeries}")
+            self.gameinfo_Series.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Genres.configure(text=f"Genres: {clean_list_to_str(self.selected_gameGenres)}")
+            self.gameinfo_Genres.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Languages.configure(text=f"Languages: {clean_list_to_str(self.selected_gameLanguages)}")
+            self.gameinfo_Languages.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Players.configure(text=f"Players: {self.selected_gamePlayers}")
+            self.gameinfo_Players.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Popularity.configure(text=f"Popularity: {self.selected_gamePopularity}")
+            self.gameinfo_Popularity.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Rating.configure(
+                text=f"Rating:{clean_simple_dict_to_str(self.selected_gameRating,
+                    sep="\n- ",
+                    start="\n- ",
+                    )}")
+            self.gameinfo_Rating.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Connectivity.configure(text=f"Connectivity: {self.selected_gameConnectivity}")
+            self.gameinfo_Connectivity.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Release_Dates.configure(
+                text=f"Release Dates:\n{clean_simple_dict_to_str(
+                    self.selected_gameRelease_Dates,
+                    sep="\n- ",
+                    start="\n- ",
+                    )}")
+            self.gameinfo_Release_Dates.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Developer.configure(text=f"Developer: {clean_list_to_str(self.selected_gameDeveloper)}")
+            self.gameinfo_Developer.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Publishers.configure(text=f"Publishers: {clean_list_to_str(self.selected_gamePublishers)}")
+            self.gameinfo_Publishers.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+            self.gameinfo_Ext_Link.configure(text=f"External Link(s): {(clean_list_to_str(self.selected_gameExt_Link))}")
+            self.gameinfo_Ext_Link.pack(
+                fill="both",
+                side="top",
+                expand=True,
+            )
+
+            self.gamemngr_selgame_gamepath.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.15,
+                )
+            self.gamemngr_selgame_savepath.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.2,
+                )
+            self.gamemngr_selgame_gametype.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.25,
+                )
+            self.gamemngr_selgame_savetype.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.3,
+                )
+            self.gamemngr_selgame_args.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.35,
+                )
+            self.gamemngr_selgame_cmd.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.4,
+                )
+            self.gamemngr_divider.place(
+                relwidth= 0.95,
+                relheight=0.006,
+                relx= 0.025,
+                rely= 0.497,
+                )
+            self.gamemngr_selgame_cursave.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.55,
+                )
+            self.gamemngr_selgame_bckpsave1.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.6,
+                )
+            self.gamemngr_selgame_bckpsave2.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.65,
+                )
+            self.gamemngr_selgame_bckpsave3.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.7,
+                )
+            self.gamemngr_selgame_bckpsave4.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.75,
+                )
+            self.gamemngr_selgame_bckpsave5.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.8,
+                )
+            self.gamemngr_selgame_bckpsave6.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.85,
+                )
+            self.gamemngr_selgame_bckpsave7.place(
+                relwidth= 0.95,
+                relx= 0.025,
+                rely= 0.9,
+                )
+
+            self.__selected_game= game_selected; return game_selected
+        return False
+    def update_descr_wraplength(self, event)-> None:
+        self.gameinfo_Description.configure(wraplength=event.width)
+    def start_game_onClick(self)-> None:
+        game_file= [key for key in self.__selected_game.keys()][0]
+        print(f"Starting {game_file}")
+        self.start_game_btn.configure(
+            text="Loading...",
+            state="disabled"
+            )
+
+        # Emulator= "PC"
+        # Alias= ""
+        # Game_Location= "./Games"
+        # Save_location= "./Games"
+        # Game_Type= ".game"
+        # Save_Type= ".sav"
+        # Args= []
+        # Manual_Start_Cmd= ""
 
 if __name__ == '__main__':
     w = RetrosHome()
