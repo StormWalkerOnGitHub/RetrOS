@@ -110,6 +110,62 @@ def clean_list_to_str(values:list|str,sep:str=", ",start="",end="")-> str:
             index='""'
         _temp+= f"{index}{sep}"
     return f"{_temp.removesuffix(sep)}{end}"
+def depth_first_search(data:dict, target:list|str, sep:str=",", new_value=None, default={}):
+    """
+    Performs a depth-first search on a nested dictionary/list structure to find a target value.
+
+    Args:\n
+        data: The dictionary or list to search.\n
+        target: The values to search for at varying depth.\n
+        sep: The value used to split the target is parsed as a string.\n
+        new_value: The value to write to data.\n
+        default: The return value if nothing was found in the data using the provided target.\n
+
+    ---
+
+    ## Returns:
+
+    Value if found, else returns default.
+    """
+
+    #region verify data input
+    if len(data)==0:# no data passed
+        raise ValueError("Please ensure your data entry is not empty")
+    elif not isinstance(data, dict):
+        raise TypeError("Please ensure your data is passed as a dictionary type")
+    #endregion verify data input
+    #region check arg types
+    if not isinstance(sep,str) and isinstance(target,str):
+        raise TypeError("Please ensure your seperator is a string format")
+    if not new_value is None:
+        match fr"{new_value}".strip():
+            case r""|r"()"|r"{}"|r"[]"|r"<>":
+                new_value=None
+    #endregion check arg types
+    #region Clean target input
+    if isinstance(target, str):# convert to list
+        target:list=target.split(sep)
+    if not isinstance(target,list):
+        raise TypeError("Please ensure target search is a list")
+    cleaned_target:list= []
+    for node in target:# remove unwanted inputs
+        if f"{node}".strip()=="":
+            continue
+        cleaned_target.append(node)
+    del target
+    if cleaned_target==[]:# raise issue if unable to retain a value
+        raise ValueError("Please ensure target is a valid search entry")
+    #endregion Clean target input
+    
+    #print(data)
+    #print(cleaned_target)
+
+    for key in cleaned_target[:-1]:
+        data = data.setdefault(key, default)
+    if new_value is not None and f"{new_value}".strip()!="":
+        data[cleaned_target[-1]] = new_value
+    
+    return data[cleaned_target[-1]]
 
 def theme(mode:str="light",attr:str="fg")-> str:
     """Returns the value based on the provided mode (theme) and attribute
@@ -652,119 +708,21 @@ class RetrosHome:
         """
         Returns a list of all child widgets within the given parent widget.
         """
+        def genMasterDict(root:str|dict, sep:str=None)-> dict:
+            """Makes &/ Returns a master dictionary"""
+            
+            match type(root):
+                case dict:
+                    return root
+            new_dict:dict={}
+        print(genMasterDict({"help":"me"}))
 
-        def genMasterDict(master=master)-> dict:
-            print(f"{master}".split(".")[1:])
-            master_dict:dict= {}
-            last_layers:str=""
-
-            for layer in f"{master}".split(".")[1:]:
-                last_layers+=f".{layer}"
-                last_layers= last_layers.removeprefix(".") \
-                    if last_layers.removeprefix(".")==layer \
-                    else last_layers
-                print(layer, last_layers)
-
-                if last_layers==layer:
-                    master_dict={
-                        layer: {
-                            "parent_alias":layer,
-                            "obj":None if any((
-                                len(f"{master}".split(".")[1:])>1,
-                                len(f"{master}".split(".")[1:])==0
-                                )) else master,
-                            "alias":layer,
-                            "tree":f"{last_layers}.{layer}",
-                            "children":{},
-                            }
-                        }
-                    continue
-                split_lastlayers:list= last_layers.split(".")
-                
-                print(master_dict)
-            input()
+        print(master)
+        print(parent)
+        root= f"{master}" if master==parent else f"{parent}"
+        print(root)
 
 
-        def check4children(parent= parent)-> dict|None:
-            """Checks a provided parent for child widgets"""
-
-            master_dict:dict= genMasterDict(".frame.help.me")
-            input()
-            all_widgets:list= parent.winfo_children()
-            child_widgets:dict={
-                    "parent_alias":f"{parent}".rsplit(".",2)[1],
-                    "obj":parent,
-                    "alias":f"{parent}".rsplit(".",1)[1],
-                    "tree":f"{parent}".rsplit(".",1)[0].removeprefix("."),
-                    "children":{},
-                    }
-            if all_widgets!=[]:# iterate if not empty
-                for accounted_for_widget in enumerate(all_widgets):
-                    index:int= accounted_for_widget[0]
-
-                    #region Str Ref
-                    widgetstr:str= f"{accounted_for_widget}"\
-                        .removeprefix("(")\
-                        .removesuffix(")")\
-                        .split(", ")[1]
-                    _widget_typeStr,_widget_heritage= widgetstr\
-                        .removeprefix("<tkinter.")\
-                        .removesuffix(">")\
-                        .split(" object .",1)
-                    _widget_alias:str= _widget_heritage.rsplit(".",1)[1]
-                    parent_alias, child_alias= _widget_heritage.split(".",1)
-                    #endregion Str Ref
-                    #region Make obj tree
-                    #region Sort str to obj
-                    widget_type= None
-                    match _widget_typeStr.lower().strip():
-                        case "frame":
-                            widget_type= Frame
-                        case "label":
-                            widget_type= Label
-                        case "entry":
-                            widget_type= Entry
-                        case "text":
-                            widget_type= Text
-                        case "canvas":
-                            widget_type= Canvas
-                        case "button":
-                            widget_type= Button
-                        case "radiobutton":
-                            widget_type= Radiobutton
-                        case "checkbutton":
-                            widget_type= Checkbutton
-                        case "Scale":
-                            widget_type= Scale
-                        case "listbox":
-                            widget_type= Listbox
-                        case "scrollbar":
-                            widget_type= Scrollbar
-                        case "optionmenu":
-                            widget_type= OptionMenu
-                        case "spinbox":
-                            widget_type= Spinbox
-                        case "labelframe":
-                            widget_type= LabelFrame
-                        case "panedwindow":
-                            widget_type= PanedWindow
-                        case None:
-                            print("Nonetype returned!")
-                    #endregion Sort str to obj
-                    child_widgets[child_alias]={
-                        "parent_alias":parent_alias,
-                        "obj":all_widgets[index],
-                        "alias":child_alias,
-                        "tree":f"{_widget_heritage}".rsplit(".",1)[0],
-                        "children":{},
-                        }
-                    #endregion Make obj tree
-            return child_widgets
-
-        results:dict= check4children()
-        input()
-
-        return
 
     def toggle_fullscreen(self, event=None):
         self.state = not self.state  # Just toggling the boolean
