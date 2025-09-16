@@ -213,6 +213,255 @@ def theme(mode:str="light",attr:str="fg")-> str:
 
 class RetrosHome:
 
+    border_width:int|float= 0.003# local value to provide as default
+    bulk_widgets:dict= {# widget configurations reference chart}
+            # All scales are percentages from 0-1
+            "frames":{
+                "gamelist_frame":{
+                    "width":0.15,
+                    "left_offset":0,
+                    "height":0.9,
+                    "top_offset":0,
+                    "fg":"Black",
+                    "bg":"Blue",
+                    "border":{
+                        "top":border_width,
+                        "bottom":border_width/2,
+                        "left":border_width,
+                        "right":border_width/2,
+                        },
+                    },
+                "gamebanner_frame":{
+                    "width":0.85,
+                    "left_offset":0.15,
+                    "height":0.2,
+                    "top_offset":0,
+                    "fg":"Black",
+                    "bg":"LimeGreen",
+                    "border":{
+                        "top":border_width,
+                        "bottom":border_width/2,
+                        "left":border_width/2,
+                        "right":border_width,
+                        },
+                    },
+                "gameinfo_frame":{
+                    "width":0.6,
+                    "left_offset":0.15,
+                    "height":0.7,
+                    "top_offset":0.2,
+                    "fg":"Black",
+                    "bg":"Yellow",
+                    "border":{
+                        "top":border_width/2,
+                        "bottom":border_width/2,
+                        "left":border_width/2,
+                        "right":border_width/2,
+                        },
+                    },
+                "gamemngr_frame":{
+                    "width":0.25,
+                    "left_offset":0.75,
+                    "height":0.7,
+                    "top_offset":0.2,
+                    "fg":"Black",
+                    "bg":"Red",
+                    "border":{
+                        "top":border_width/2,
+                        "bottom":border_width/2,
+                        "left":border_width/2,
+                        "right":border_width,
+                        },
+                    },
+                "appmngr_frame":{
+                    "width":1.0,
+                    "left_offset":0,
+                    "height":0.1,
+                    "top_offset":0.9,
+                    "fg":"Black",
+                    "bg":"Purple",
+                    "border":{
+                        "top":border_width/2,
+                        "bottom":border_width,
+                        "left":border_width,
+                        "right":border_width,
+                        },
+                    },
+            },
+            "labels":{
+                "gameinfo_noticeLabel":{
+                    "width":1,
+                    "left_offset":0,
+                    "height":1,
+                    "top_offset":0,
+                    "fg":"Black",
+                    "bg":"Blue",
+                    "justify":"center",
+                    "text":"No Games Detected",
+                },
+                "gamemngr_selgame_gamepath":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.15,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Game Location: ",
+                },
+                "gamemngr_selgame_savepath":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.2,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Save Location: ",
+                },
+                "gamemngr_selgame_gametype":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.25,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Game Type: ",
+                },
+                "gamemngr_selgame_savetype":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.3,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Save Type: ",
+                },
+                "gamemngr_selgame_args":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.35,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Args: ",
+                },
+                "gamemngr_selgame_cmd":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.4,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Manual Command: ",
+                },
+                "gamemngr_divider":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.006,
+                    "top_offset":0.497,
+                    "fg":"Black",
+                    "bg":"Black",
+                    "justify":"left",
+                    "text":f"",
+                },
+                "gamemngr_selgame_cursave":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.55,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Current Save: ",
+                },
+                "gamemngr_selgame_bckpsave1":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.6,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Backup Save (1): ",
+                },
+                "gamemngr_selgame_bckpsave2":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.65,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Backup Save (2): ",
+                },
+                "gamemngr_selgame_bckpsave3":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.7,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Backup Save (3): ",
+                },
+                "gamemngr_selgame_bckpsave4":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.75,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Backup Save (4): ",
+                },
+                "gamemngr_selgame_bckpsave5":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.8,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Backup Save (5): ",
+                },
+                "gamemngr_selgame_bckpsave6":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.85,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Backup Save (6): ",
+                },
+                "gamemngr_selgame_bckpsave7":{
+                    "width":0.95,
+                    "left_offset":0.025,
+                    "height":0.05,
+                    "top_offset":0.9,
+                    "fg":"Black",
+                    "bg":"red",
+                    "justify":"left",
+                    "text":f"Backup Save (7): ",
+                },
+                "appmngr_settings":{
+                    "width":0.1,
+                    "left_offset":0.01875,
+                    "height":0.5,
+                    "top_offset":0.25,
+                    "fg":"Black",
+                    "bg":"grey",
+                    "justify":"left",
+                    "text":f"Settings: ",
+                },
+            }
+        }
+
     def __init__(self):
         """Localized Game Hub"""
 
@@ -220,80 +469,6 @@ class RetrosHome:
         self.app_name:str= "RetrOS"
         self.theme="dark"   # light/dark mode
         self.opp_theme= lambda: "light" if self.theme=="dark" else "dark"
-        border_width:int|float= 0.003# local value to provide as default
-        self.bulk_widgets:dict= {# widget configurations reference chart}
-            # All scales are percentages from 0-1
-            "gamelist_frame":{
-                "width":0.15,
-                "left_offset":0,
-                "height":0.9,
-                "top_offset":0,
-                "fg":"Black",
-                "bg":"Blue",
-                "border":{
-                    "top":border_width,
-                    "bottom":border_width/2,
-                    "left":border_width,
-                    "right":border_width/2,
-                    },
-                },
-            "gamebanner_frame":{
-                "width":0.85,
-                "left_offset":0.15,
-                "height":0.2,
-                "top_offset":0,
-                "fg":"Black",
-                "bg":"LimeGreen",
-                "border":{
-                    "top":border_width,
-                    "bottom":border_width/2,
-                    "left":border_width/2,
-                    "right":border_width,
-                    },
-                },
-            "gameinfo_frame":{
-                "width":0.6,
-                "left_offset":0.15,
-                "height":0.7,
-                "top_offset":0.2,
-                "fg":"Black",
-                "bg":"Yellow",
-                "border":{
-                    "top":border_width/2,
-                    "bottom":border_width/2,
-                    "left":border_width/2,
-                    "right":border_width/2,
-                    },
-                },
-            "gamemngr_frame":{
-                "width":0.25,
-                "left_offset":0.75,
-                "height":0.7,
-                "top_offset":0.2,
-                "fg":"Black",
-                "bg":"Red",
-                "border":{
-                    "top":border_width/2,
-                    "bottom":border_width/2,
-                    "left":border_width/2,
-                    "right":border_width,
-                    },
-                },
-            "appmngr_frame":{
-                "width":1.0,
-                "left_offset":0,
-                "height":0.1,
-                "top_offset":0.9,
-                "fg":"Black",
-                "bg":"Purple",
-                "border":{
-                    "top":border_width/2,
-                    "bottom":border_width,
-                    "left":border_width,
-                    "right":border_width,
-                    },
-                },
-        }
         self.owned_games:dict= {}
         self.__selected_game:dict=blacklisted_game
         self.tk = Tk(className=self.app_name)
@@ -333,6 +508,7 @@ class RetrosHome:
             height=0, # Offset from top to bottom
             fg=theme(self.theme,"fg"),
             bg=theme(self.theme,"bg"))
+            
 
         self.gamelist_frame= Frame(# Stores list of owned games)
             self.frame,
@@ -363,15 +539,12 @@ class RetrosHome:
             name="gameinfo_frame",
             bg=theme(self.theme,"Primary"),
             )
-        self.gameinfo_noticeLabel= Label(
-            self.gameinfo_frame,
-            name="gameinfo_noticeLabel",
-            text= "No Games Detected",
-            bg= theme(self.theme,"Primary"),
-            fg= theme(self.opp_theme(),"fg"),
-            justify= "center",
-            font=self.selected_font,
-        )
+        self.gameinfo_noticeLabel= self.create_label(
+            "gameinfo_noticeLabel",
+            self.gameinfo_frame,self.bulk_widgets["labels"]
+            )
+        # Game info region is packed instead of placed
+        #region game info
         self.gameinfo_Description= Label(
             self.gameinfo_frame,
             name="gameinfo_Description",
@@ -480,11 +653,12 @@ class RetrosHome:
             justify= "left",
             font=self.selected_font,
         )
+        #endregion game info
 
         self.gamemngr_frame= Frame(# Stores game options for selected game)
             self.frame,
             name="gamemngr_frame",
-            bg=self.bulk_widgets["gamemngr_frame"]["bg"],
+            bg=self.bulk_widgets["frames"]["gamemngr_frame"]["bg"],
             )
         self.start_game_btn = Button(
             self.gamemngr_frame,
@@ -494,153 +668,106 @@ class RetrosHome:
             command=self.start_game_onClick,
             state="disabled"
             )
-        self.gamemngr_selgame_gamepath= Label(
+        self.gamemngr_selgame_gamepath= self.create_label(
+            "gamemngr_selgame_gamepath",
             self.gamemngr_frame,
-            name="gamemngr_selgame_path",
-            text= f"Game Location: ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_savepath= Label(
+            
+        self.gamemngr_selgame_savepath= self.create_label(
+            "gamemngr_selgame_savepath",
             self.gamemngr_frame,
-            name="gamemngr_selgame_savepath",
-            text= f"Save Location: ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_gametype= Label(
+        self.gamemngr_selgame_gametype= self.create_label(
+            "gamemngr_selgame_gametype",
             self.gamemngr_frame,
-            name="gamemngr_selgame_gametype",
-            text= f"Game Type: ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_savetype= Label(
+        self.gamemngr_selgame_savetype= self.create_label(
+            "gamemngr_selgame_savetype",
             self.gamemngr_frame,
-            name="gamemngr_selgame_savetype",
-            text= f"Save Type: ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_args= Label(
+        self.gamemngr_selgame_args= self.create_label(
+            "gamemngr_selgame_args",
             self.gamemngr_frame,
-            name="gamemngr_selgame_args",
-            text= f"Args: ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_cmd= Label(
+        self.gamemngr_selgame_cmd= self.create_label(
+            "gamemngr_selgame_cmd",
             self.gamemngr_frame,
-            name="gamemngr_selgame_cmd",
-            text= f"Manual Command: ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_divider= Label(
+        self.gamemngr_divider= self.create_label(
+            "gamemngr_divider",
             self.gamemngr_frame,
-            name="gamemngr_divider",
-            text= "",
-            bg= "black",
-            fg= "Black",
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_cursave= Label(
+        self.gamemngr_selgame_cursave= self.create_label(
+            "gamemngr_selgame_cursave",
             self.gamemngr_frame,
-            name="gamemngr_selgame_cursave",
-            text= f"Current Save: ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_bckpsave1= Label(
+        self.gamemngr_selgame_bckpsave1= self.create_label(
+            "gamemngr_selgame_bckpsave1",
             self.gamemngr_frame,
-            name="gamemngr_selgame_bckpsave1",
-            text= f"Backup Save (1): ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_bckpsave2= Label(
+        self.gamemngr_selgame_bckpsave2= self.create_label(
+            "gamemngr_selgame_bckpsave2",
             self.gamemngr_frame,
-            name="gamemngr_selgame_bckpsave2",
-            text= f"Backup Save (2): ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_bckpsave3= Label(
+        self.gamemngr_selgame_bckpsave3= self.create_label(
+            "gamemngr_selgame_bckpsave3",
             self.gamemngr_frame,
-            name="gamemngr_selgame_bckpsave3",
-            text= f"Backup Save (3): ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_bckpsave4= Label(
+        self.gamemngr_selgame_bckpsave4= self.create_label(
+            "gamemngr_selgame_bckpsave4",
             self.gamemngr_frame,
-            name="gamemngr_selgame_bckpsave4",
-            text= f"Backup Save (4): ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_bckpsave5= Label(
+        self.gamemngr_selgame_bckpsave5= self.create_label(
+            "gamemngr_selgame_bckpsave5",
             self.gamemngr_frame,
-            name="gamemngr_selgame_bckpsave5",
-            text= f"Backup Save (5): ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_bckpsave6= Label(
+        self.gamemngr_selgame_bckpsave6= self.create_label(
+            "gamemngr_selgame_bckpsave6",
             self.gamemngr_frame,
-            name="gamemngr_selgame_bckpsave6",
-            text= f"Backup Save (6): ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
-        self.gamemngr_selgame_bckpsave7= Label(
+        self.gamemngr_selgame_bckpsave7= self.create_label(
+            "gamemngr_selgame_bckpsave7",
             self.gamemngr_frame,
-            name="gamemngr_selgame_bckpsave7",
-            text= f"Backup Save (7): ",
-            bg= "red",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+            self.bulk_widgets["labels"],
+            visible= False
             )
 
         self.appmngr_frame= Frame(# Stores options relating to the game library and the app
             self.frame,
             name="appmngr_frame",
-            bg=self.bulk_widgets["appmngr_frame"]["bg"],
+            bg=self.bulk_widgets["frames"]["appmngr_frame"]["bg"],
             )
-        self.appmngr_settings= Label(
-            self.appmngr_frame,
-            name="appmngr_settings",
-            text= f"Settings: ",
-            bg="grey",
-            fg= "Black",
-            justify= "left",
-            font=self.selected_font,
+        self.appmngr_settings= self.create_label(
+            "appmngr_settings",
+            self.appmngr_frame,self.bulk_widgets["labels"]
             )
         self.appmngr_theme_btn = Button(
             self.appmngr_frame,
@@ -657,11 +784,11 @@ class RetrosHome:
             relx=0,
             rely=0
             )
-        self.place_frame(self.gamelist_frame, self.bulk_widgets)
-        self.place_frame(self.gamebanner_frame, self.bulk_widgets)
-        self.place_frame(self.gameinfo_frame, self.bulk_widgets)
-        self.place_frame(self.gamemngr_frame, self.bulk_widgets)
-        self.place_frame(self.appmngr_frame, self.bulk_widgets)
+        self.place_frame(self.gamelist_frame, self.bulk_widgets["frames"])
+        self.place_frame(self.gamebanner_frame, self.bulk_widgets["frames"])
+        self.place_frame(self.gameinfo_frame, self.bulk_widgets["frames"])
+        self.place_frame(self.gamemngr_frame, self.bulk_widgets["frames"])
+        self.place_frame(self.appmngr_frame, self.bulk_widgets["frames"])
 
         # Owned Games (Left)
         self.games_listbox.place(
@@ -672,13 +799,6 @@ class RetrosHome:
             )
         self.populate_gameList()
         # Selected Game Banner (Top)
-        # Selected Game Information (Middle)
-        self.gameinfo_noticeLabel.place(
-            relwidth=1,
-            relheight=1,
-            relx=0,
-            rely=0,
-            )
         # Selected Game Management (Right)
         self.start_game_btn.place(
             relwidth= 0.95,
@@ -687,12 +807,6 @@ class RetrosHome:
             rely= 0.025,
             )
         # Selected App Management (Bottom)
-        self.appmngr_settings.place(
-            relwidth= 0.1,
-            relheight= 0.5,
-            relx= 0.01875,
-            rely= 0.25,
-            )
         self.appmngr_theme_btn.place(
             relwidth= 0.1,
             relheight= 0.5,
@@ -701,27 +815,7 @@ class RetrosHome:
             )
         #endregion Add objects to window
 
-        print(self.get_all_widgets(self.frame, self.frame))
         self.toggle_fullscreen() # Open into fullscreen mode
-
-    def get_all_widgets(self, parent, master):
-        """
-        Returns a list of all child widgets within the given parent widget.
-        """
-        def genMasterDict(root:str|dict, sep:str=None)-> dict:
-            """Makes &/ Returns a master dictionary"""
-            
-            match type(root):
-                case dict:
-                    return root
-            new_dict:dict={}
-        print(genMasterDict({"help":"me"}))
-
-        print(master)
-        print(parent)
-        root= f"{master}" if master==parent else f"{parent}"
-        print(root)
-
 
 
     def toggle_fullscreen(self, event=None):
@@ -760,6 +854,7 @@ class RetrosHome:
     def place_frame(self, widget, reference_chart:dict)-> list[tuple[int]]:
         """Ensures borders are properly calculated for a given frame when placed"""
         widget_name= widget.winfo_name()
+        print(widget_name)
 
         widget_width= reference_chart[widget_name]["width"]
         widget_height= reference_chart[widget_name]["height"]
@@ -774,6 +869,51 @@ class RetrosHome:
             relx= widget_offsetx+widget_border["left"],
             rely= widget_offsety+widget_border["top"],
         )
+    def place_label(self, widget, reference_chart:dict)-> list[tuple[int]]:
+        """Ensures borders are properly calculated for a given label when placed"""
+        widget_name= widget.winfo_name()
+        print(widget_name)
+
+        widget_width= reference_chart[widget_name]["width"]
+        widget_height= reference_chart[widget_name]["height"]
+        widget_offsetx= reference_chart[widget_name]["left_offset"]
+        widget_offsety= reference_chart[widget_name]["top_offset"]
+
+        widget.place(
+            relwidth= widget_width,
+            relheight= widget_height,
+            relx= widget_offsetx,
+            rely= widget_offsety,
+        )
+    
+    def create_label(self, alias:str, parent:Widget, reference_chart:dict, visible:bool|str="place")-> Widget:
+        """Creates and places a label based on reference chart lookup values"""
+        alias:str= f"{alias}".strip()
+        visible:False|str= False if visible is False else f"{visible}".strip().lower()
+
+        label_widget= Label(
+            parent,
+            name=alias,
+            text=reference_chart[alias]["text"],
+            bg=reference_chart[alias]["bg"],
+            fg=reference_chart[alias]["fg"],
+            justify= reference_chart[alias]["justify"],
+            font=self.selected_font,
+            )
+        reference_chart[alias]["parent"]= parent
+        reference_chart[alias]["font"]= self.selected_font
+
+        match visible:# Determines if the object is immediately placed and stores value
+            case False:
+                reference_chart[alias]["visible"]= False
+            case "place":
+                self.place_label(label_widget, reference_chart)
+                reference_chart[alias]["visible"]= "place"
+            case "pack":
+                self.pack_label(label_widget, reference_chart)
+                reference_chart[alias]["visible"]= "pack"
+        return label_widget
+
     def populate_gameList(self)-> list:
         """Populates the list with games installed on the computer"""
         # Read through Games.conf
@@ -944,12 +1084,7 @@ class RetrosHome:
                 side="top",
                 expand=True,
             )
-
-            self.gamemngr_selgame_gamepath.place(
-                relwidth= 0.95,
-                relx= 0.025,
-                rely= 0.15,
-                )
+            self.place_label(self.gamemngr_selgame_gamepath,self.bulk_widgets["labels"])
             self.gamemngr_selgame_savepath.place(
                 relwidth= 0.95,
                 relx= 0.025,
@@ -1022,7 +1157,8 @@ class RetrosHome:
                 rely= 0.9,
                 )
 
-            self.__selected_game= game_selected; return game_selected
+            self.__selected_game= game_selected
+            return game_selected
         return False
     def update_descr_wraplength(self, event)-> None:
         self.gameinfo_Description.configure(wraplength=event.width)
